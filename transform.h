@@ -20,6 +20,7 @@
 #define BACK 7
 
 #define LINES_PER_CHUNK 14
+#define LINE_LENGTH 16
 
 #define CHUNK_SIZE 1200
 #define RED_COLOR 0x000000FF
@@ -58,10 +59,10 @@ void Highlight_hEdit_right(UINT uStartPos, UINT uEndPos, COLORREF color);
 int readline(PTCHAR buf, long long mark_src);
 void putbyt_buf(PTCHAR buf1, PTCHAR buf2, long long* mark_dst, long long* mark_src);
 void putbyt_addr(int c, PTCHAR Buffer_1, long long* mark_dst);
-void putlong(PTCHAR Buffer_1, int addr, long long* mark_dst);
+void putlong(PTCHAR Buffer_1, int addr, long long* mark_dst, char *first_time);
 void printline(long long size, long long* mark_dst, long long* mark_src, PTCHAR buf1, PTCHAR buf2);
-void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read);
-void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read);
+void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, char *first_time);
+void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, char *first_time);
 void compare();
 void goto_next_chunk(HWND hwnd);
 void goto_previous_chunk(HWND hwnd);

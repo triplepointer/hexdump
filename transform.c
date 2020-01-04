@@ -173,7 +173,9 @@ void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, c
     long long mark_src = chunk_read* LINES_PER_CHUNK * 16;
 
     size = readline(Buffer_2, mark_src);
-
+    if (size == 0) {
+        last_counter_left = 0;
+    }
     while (counter < LINES_PER_CHUNK && size != 0) {
 
         putlong(Buffer_1, addr_left, &mark_dst, &first_time);
@@ -201,7 +203,9 @@ void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, 
     long long mark_src = chunk_read * LINES_PER_CHUNK * 16;
 
     size = readline(Buffer_2, mark_src);
-
+    if (size == 0) {
+        last_counter_right = 0;
+    }
     while (counter < LINES_PER_CHUNK && size != 0) {
 
         putlong(Buffer_1, addr_right, &mark_dst, &first_time);
@@ -213,10 +217,10 @@ void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, 
         printline(size, &mark_dst, &mark_src, Buffer_1, Buffer_2);
 
         addr_right += 16;
-        if ((size = readline(Buffer_2, mark_src)) == 0)
-            break;
         counter++;
         last_counter_right = counter;
+        if ((size = readline(Buffer_2, mark_src)) == 0)
+            break;
     }
     
 }
@@ -265,7 +269,7 @@ void goto_next_chunk(HWND hwnd)
     else {
         chunk_read_left += 1;
         buffer_write_left(buffer_left, mapping_left->dataPtr, chunk_read_left, 0);
-        if (buffer_left[0] == 0) isEnd_left = TRUE;
+        if (buffer_left[1064] == 0) isEnd_left = TRUE;
         SetWindowText(hEdit_left, buffer_left);
         fileMappingClose(mapping_left);
     }
@@ -279,7 +283,7 @@ right:
     else {
         chunk_read_right += 1;
         buffer_write_right(buffer_right, mapping_right->dataPtr, chunk_read_right, 0);
-        if (buffer_right[0] == 0) isEnd_right = TRUE;
+        if (buffer_right[1064] == 0) isEnd_right = TRUE;
         SetWindowText(hEdit_right, buffer_right);
         fileMappingClose(mapping_right);
     }
@@ -299,7 +303,7 @@ void goto_previous_chunk(HWND hwnd)
     else {
         chunk_read_left -= 1;
 
-        addr_left -= (last_counter_left * 16 + LINES_PER_CHUNK * 16);
+        addr_left -= (last_counter_left * LINE_LENGTH + LINES_PER_CHUNK * LINE_LENGTH);
         isEnd_left = FALSE;
         if (addr_left != 0)
             buffer_write_left(buffer_left, mapping_left->dataPtr, chunk_read_left, 0);
@@ -311,14 +315,14 @@ void goto_previous_chunk(HWND hwnd)
 
 right:
 
-    if (chunk_read_right == 0 || (chunk_read_right < chunk_read_left)) return;
+    if (chunk_read_right == 0 || (chunk_read_right <= chunk_read_left)) return;
 
     if ((mapping_right = fileMappingCreate(saved_filename_right, hwnd)) == NULL)
         MessageBox(hwnd, _T("You have to reopen second file for comparison!"), _T("Error!"), NULL);
     else {
         chunk_read_right -= 1;
 
-        addr_right -= (last_counter_right * 16 + LINES_PER_CHUNK * 16);
+        addr_right -= (last_counter_right * LINE_LENGTH + LINES_PER_CHUNK * LINE_LENGTH);
         isEnd_right = FALSE;
         if (addr_right != 0)
             buffer_write_right(buffer_right, mapping_right->dataPtr, chunk_read_right, 0);

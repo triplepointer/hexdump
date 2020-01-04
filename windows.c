@@ -141,6 +141,7 @@ void display_file_left(PTCHAR path, HWND hwnd)
             SetWindowText(hEdit_right, _T(""));
         }
         buffer_write_left(Buffer, mapping_left->dataPtr, chunk_read_left, 1);
+        if (Buffer[1065] == 0) isEnd_left = TRUE;
         SetWindowText(hEdit_left, Buffer);
         fileMappingClose(mapping_left);
     }
@@ -160,6 +161,7 @@ void display_file_right(PTCHAR path, HWND hwnd)
             SetWindowText(hEdit_left, _T(""));
         }
         buffer_write_right(Buffer, mapping_right->dataPtr, chunk_read_right, 1);
+        if (Buffer[1065] == 0) isEnd_left = TRUE;
         SetWindowText(hEdit_right, Buffer);
         fileMappingClose(mapping_right);
     }
