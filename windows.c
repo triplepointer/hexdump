@@ -140,7 +140,7 @@ void display_file_left(PTCHAR path, HWND hwnd)
             MessageBox(hwnd, _T("You have to open second file for comparison!"), _T("Attention!"), NULL);
             SetWindowText(hEdit_right, _T(""));
         }
-        buffer_write(Buffer, mapping_left->dataPtr, chunk_read_left);
+        buffer_write_left(Buffer, mapping_left->dataPtr, chunk_read_left, 1);
         SetWindowText(hEdit_left, Buffer);
         fileMappingClose(mapping_left);
     }
@@ -159,7 +159,7 @@ void display_file_right(PTCHAR path, HWND hwnd)
             MessageBox(hwnd, _T("You have to open first file for comparison!"), _T("Attention!"), NULL);
             SetWindowText(hEdit_left, _T(""));
         }
-        buffer_write(Buffer, mapping_right->dataPtr, chunk_read_right);
+        buffer_write_right(Buffer, mapping_right->dataPtr, chunk_read_right, 1);
         SetWindowText(hEdit_right, Buffer);
         fileMappingClose(mapping_right);
     }
@@ -216,12 +216,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             switch (wParam)
             {
             case OPEN_FIRST_FILE:
+                last_counter_left = 0;
+                addr_left = 0;
                 chunk_read_left = 0;
                 isEnd_right = FALSE;
                 isEnd_left = FALSE;
                 open_file_left(hwnd);
                 break;
             case OPEN_SECOND_FILE:
+                last_counter_right = 0;
+                addr_right = 0;
                 chunk_read_right = 0;
                 isEnd_right = FALSE;
                 isEnd_left = FALSE;

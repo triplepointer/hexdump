@@ -44,6 +44,12 @@ extern TCHAR saved_filename_right[100];
 extern char isEnd_left;
 extern char isEnd_right;
 
+extern char last_counter_left;
+extern char last_counter_right;
+
+extern long long addr_left;
+extern long long addr_right;
+
 extern int left_menu_id;
 extern int right_menu_id;
 
@@ -54,7 +60,8 @@ void putbyt_buf(PTCHAR buf1, PTCHAR buf2, long long* mark_dst, long long* mark_s
 void putbyt_addr(int c, PTCHAR Buffer_1, long long* mark_dst);
 void putlong(PTCHAR Buffer_1, int addr, long long* mark_dst);
 void printline(long long size, long long* mark_dst, long long* mark_src, PTCHAR buf1, PTCHAR buf2);
-void buffer_write(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read);
+void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read);
+void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read);
 void compare();
 void goto_next_chunk(HWND hwnd);
 void goto_previous_chunk(HWND hwnd);
