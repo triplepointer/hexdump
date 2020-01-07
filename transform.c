@@ -6,8 +6,7 @@
 #include <richedit.h>
 #include "transform.h"
 
-char isEnd_left = FALSE;
-char isEnd_right = FALSE;
+
 
 long long addr_left = 0;
 long long addr_right = 0;
@@ -20,15 +19,15 @@ void Highlight_hEdit_left(UINT uStartPos, UINT uEndPos, COLORREF color) {
     CHARRANGE save;
     cr.cpMin = uStartPos;
     cr.cpMax = uEndPos;
-    SendMessage(hEdit_left, EM_EXGETSEL, 0, (LPARAM)&save);// запомнить
-    SendMessage(hEdit_left, EM_EXSETSEL, 0, (LPARAM)&cr);  // новая позиция
+    SendMessage(hEdit_left, EM_EXGETSEL, 0, (LPARAM)&save);// save old position
+    SendMessage(hEdit_left, EM_EXSETSEL, 0, (LPARAM)&cr);  // new position
     CHARFORMAT cf;
     cf.cbSize = sizeof(cf);
     cf.dwMask = CFM_COLOR;
     cf.dwEffects = 0; // add this line
     cf.crTextColor = color;
     SendMessage(hEdit_left, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
-    SendMessage(hEdit_left, EM_EXSETSEL, 0, (LPARAM)&save); // вернуть позицию
+    SendMessage(hEdit_left, EM_EXSETSEL, 0, (LPARAM)&save); // go back to saved position
 }
 
 void Highlight_hEdit_right(UINT uStartPos, UINT uEndPos, COLORREF color) {
@@ -36,21 +35,16 @@ void Highlight_hEdit_right(UINT uStartPos, UINT uEndPos, COLORREF color) {
     CHARRANGE save;
     cr.cpMin = uStartPos;
     cr.cpMax = uEndPos;
-    SendMessage(hEdit_right, EM_EXGETSEL, 0, (LPARAM)&save);// запомнить
-    SendMessage(hEdit_right, EM_EXSETSEL, 0, (LPARAM)&cr);  // новая позиция
+    SendMessage(hEdit_right, EM_EXGETSEL, 0, (LPARAM)&save);// save old position
+    SendMessage(hEdit_right, EM_EXSETSEL, 0, (LPARAM)&cr);  // new position
     CHARFORMAT cf;
     cf.cbSize = sizeof(cf);
     cf.dwMask = CFM_COLOR;
     cf.dwEffects = 0; // add this line
     cf.crTextColor = color;
     SendMessage(hEdit_right, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
-    SendMessage(hEdit_right, EM_EXSETSEL, 0, (LPARAM)&save); // вернуть позицию
+    SendMessage(hEdit_right, EM_EXSETSEL, 0, (LPARAM)&save); // go back to saved position
 }
-
-/* readline - This routine reads in the next 16 bytes from the file and
-              places them in the array named 'row', setting 'size' to
-              be the number of bytes read in.  Size will be less than
-              16 if EOF was encountered, and may possibly be 0.  */
 
 int readline(PTCHAR buf, long long mark_src) {
     int size = 0;
@@ -62,57 +56,48 @@ int readline(PTCHAR buf, long long mark_src) {
     return size;
 }
 
-/* putbyt - This routine is passed a byte (i.e., an integer < 256) which
-          it displays as 2 hex characters.  If passed a number out of that
-          range, it outputs nothing.  */
-
 void putbyt_buf(PTCHAR buf1, PTCHAR buf2, long long* mark_dst, long long* mark_src)
 {
     int i;
     if (((buf2[*mark_src]) >= 0) && ((buf2[*mark_src]) <= 255)) {
         i = (buf2[(*mark_src)] & 0x000000f0) >> 4;
         if (i < 10) {
-            buf1[++ * mark_dst] = ('0' + i);
+            buf1[++ * mark_dst] = ('0' + i); // 0 1 2 3 4 5 6 7 8 9
         }
         else {
-            buf1[++ * mark_dst] = ('A' + i - 10);
+            buf1[++ * mark_dst] = ('A' + i - 10); // 10(A) 11(B) 12(C) 13(D) 14(E) 15(F)
         }
         i = (buf2[(*mark_src)] & 0x0000000f) >> 0;
         if (i < 10) {
-            buf1[++(*mark_dst)] = ('0' + i);
+            buf1[++(*mark_dst)] = ('0' + i);// 0 1 2 3 4 5 6 7 8 9
         }
         else {
-            buf1[++(*mark_dst)] = ('A' + i - 10);
+            buf1[++(*mark_dst)] = ('A' + i - 10);// 10(A) 11(B) 12(C) 13(D) 14(E) 15(F)
         }
     }
 }
 
-/* putbyt - This routine is passed a byte (i.e., an integer < 256) which
-          it displays as 2 hex characters.  If passed a number out of that
-          range, it outputs nothing.  */
 void putbyt_addr(int c, PTCHAR Buffer_1, long long* mark_dst)
 {
     int i;
     if ((c >= 0) && (c <= 255)) {
         i = (c & 0x000000f0) >> 4;
         if (i < 10) {
-            Buffer_1[*mark_dst] = ('0' + i);
+            Buffer_1[*mark_dst] = ('0' + i);// 0 1 2 3 4 5 6 7 8 9
         }
         else {
-            Buffer_1[*mark_dst] = ('A' + i - 10);
+            Buffer_1[*mark_dst] = ('A' + i - 10);// 10(A) 11(B) 12(C) 13(D) 14(E) 15(F)
         }
         i = (c & 0x0000000f) >> 0;
         if (i < 10) {
-            Buffer_1[++ * mark_dst] = ('0' + i);
+            Buffer_1[++ * mark_dst] = ('0' + i);// 0 1 2 3 4 5 6 7 8 9
         }
         else {
-            Buffer_1[++ * mark_dst] = ('A' + i - 10);
+            Buffer_1[++ * mark_dst] = ('A' + i - 10);// 10(A) 11(B) 12(C) 13(D) 14(E) 15(F)
         }
     }
 }
 
-/* putlong - This routine is passed an integer, which it displays as 8
-             hex digits.  */
 void putlong(PTCHAR Buffer_1, long long addr, long long* mark_dst, char *first_time)
 {
     if (addr >= 16 && *first_time) {
@@ -121,16 +106,15 @@ void putlong(PTCHAR Buffer_1, long long addr, long long* mark_dst, char *first_t
     }
     else
         *mark_dst += 0;
-    putbyt_addr(((addr >> 24) & 0x000000ff), Buffer_1, mark_dst);
+    putbyt_addr(((addr >> 24) & 0x000000ff), Buffer_1, mark_dst); // 3rd byte
     *mark_dst += 1;
-    putbyt_addr(((addr >> 16) & 0x000000ff), Buffer_1, mark_dst);
+    putbyt_addr(((addr >> 16) & 0x000000ff), Buffer_1, mark_dst); // 2nd byte
     *mark_dst += 1;
-    putbyt_addr(((addr >> 8) & 0x000000ff), Buffer_1, mark_dst);
+    putbyt_addr(((addr >> 8) & 0x000000ff), Buffer_1, mark_dst); // 1st byte
     *mark_dst += 1;
-    putbyt_addr(((addr >> 0) & 0x000000ff), Buffer_1, mark_dst);
+    putbyt_addr(((addr >> 0) & 0x000000ff), Buffer_1, mark_dst); // 0th byte
 }
 
-/* printline - This routine prints the current 'row'.  */
 void printline(long long size, long long* mark_dst, long long* mark_src, PTCHAR buf1, PTCHAR buf2)
 {
     int i, c;
@@ -141,7 +125,12 @@ void printline(long long size, long long* mark_dst, long long* mark_src, PTCHAR 
                 putbyt_buf(buf1, buf2, mark_dst, mark_src);
                 *mark_src += 1;
                 buf1[++(*mark_dst)] = ' ';
-                if (buf2[*mark_src] == '\0') return;
+ //               if (buf2[*mark_src] == '\0') return;
+            }
+            else {
+                buf1[++(*mark_dst)] = '0';
+                buf1[++(*mark_dst)] = '0';
+                buf1[++(*mark_dst)] = ' ';
             }
             i++;
         }
@@ -263,7 +252,6 @@ void goto_next_chunk(HWND hwnd)
 
     if (isEnd_left) goto right;
     
-
     if ((mapping_left = fileMappingCreate(saved_filename_left,hwnd)) == NULL)
         MessageBox(hwnd, _T("You have to reopen first file for comparison!"), _T("Error!"), NULL);
     else {

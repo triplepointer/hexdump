@@ -21,6 +21,9 @@ int right_menu_id;
 TCHAR saved_filename_left[100];
 TCHAR saved_filename_right[100];
 
+char isEnd_left = 0;
+char isEnd_right = 0;
+
 long long chunk_read_left = 0;
 long long chunk_read_right = 0;
 
@@ -132,7 +135,7 @@ void display_file_left(PTCHAR path, HWND hwnd)
     TCHAR Buffer[CHUNK_SIZE];
     memset(Buffer, 0, sizeof(Buffer));
 
-    if (path == NULL)
+    if (path[0] == '\0')
         ;
     else {
         mapping_left = fileMappingCreate(path, hwnd);
@@ -152,7 +155,7 @@ void display_file_right(PTCHAR path, HWND hwnd)
     TCHAR Buffer[CHUNK_SIZE];
     memset(Buffer, 0, sizeof(Buffer));
 
-    if (path == NULL)
+    if (path[0] == '\0')
         ;
     else {
         mapping_right = fileMappingCreate(path, hwnd);
@@ -161,7 +164,7 @@ void display_file_right(PTCHAR path, HWND hwnd)
             SetWindowText(hEdit_left, _T(""));
         }
         buffer_write_right(Buffer, mapping_right->dataPtr, chunk_read_right, 1);
-        if (Buffer[1065] == 0) isEnd_left = TRUE;
+        if (Buffer[1065] == 0) isEnd_right = TRUE;
         SetWindowText(hEdit_right, Buffer);
         fileMappingClose(mapping_right);
     }
@@ -221,7 +224,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 last_counter_left = 0;
                 addr_left = 0;
                 chunk_read_left = 0;
-                isEnd_right = FALSE;
                 isEnd_left = FALSE;
                 open_file_left(hwnd);
                 break;
@@ -230,7 +232,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 addr_right = 0;
                 chunk_read_right = 0;
                 isEnd_right = FALSE;
-                isEnd_left = FALSE;
                 open_file_right(hwnd);
                 break;
             case FILE_MENU_COMPARE:
