@@ -8,12 +8,26 @@
 
 const TCHAR g_szClassName[] = _T("EgorkaWindowClass");
 
+long long offset_low_left = 0;
+long long offset_high_left = 0;
+long long offset_low_right = 0;
+long long offset_high_right = 0;
+
+OVERLAPPED olf_left = { 0 };
+OVERLAPPED olf_right = { 0 };
+
+LARGE_INTEGER li_left = { 0 };
+LARGE_INTEGER li_right = { 0 };
+
 HMENU hMenu;
 HWND hEdit_left;
 HWND hEdit_right;
 HWND hCompare;
 HWND button_next;
 HWND button_back;
+
+DWORD FileSize_left = 0;
+DWORD FileSize_right = 0;
 
 int left_menu_id;
 int right_menu_id;
@@ -26,9 +40,6 @@ char isEnd_right = 0;
 
 long long chunk_read_left = 0;
 long long chunk_read_right = 0;
-
-struct FileMapping* mapping_left = { 0 };
-struct FileMapping* mapping_right = { 0 };
 
 void AddMenus(HWND hwnd)
 {
@@ -77,96 +88,85 @@ void AddControls(HWND hwnd)
         980, 600, 120, 30, hwnd, (HMENU)NEXT, NULL, NULL);
 }
 
-struct FileMapping* fileMappingCreate(PTCHAR path, HWND hwnd) {
-    HANDLE hFile = CreateFile(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hFile == INVALID_HANDLE_VALUE) {
-        MessageBox(hwnd, _T("CreateFile failed"), _T("Error!"), NULL);
-        return NULL;
-    }
-
-    DWORD dwFileSize = GetFileSize(hFile, NULL);
-    if (dwFileSize == INVALID_FILE_SIZE) {
-        MessageBox(hwnd, _T("GetFileSize failed"), _T("Error!"), NULL);
-        CloseHandle(hFile);
-        return NULL;
-    }
-
-    HANDLE hMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (hMapping == NULL) {
-        MessageBox(hwnd, _T("CreateFileMapping failed"), _T("Error!"), NULL);
-        CloseHandle(hFile);
-        return NULL;
-    }
-
-    PTCHAR dataPtr = (PTCHAR)MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, dwFileSize);
-    if (dataPtr == NULL) {
-        MessageBox(hwnd, _T("MapViewOfFile failed"), _T("Error!"), NULL);
-        CloseHandle(hMapping);
-        CloseHandle(hFile);
-        return NULL;
-    }
-
-    struct FileMapping* mapping = (struct FileMapping*)malloc(sizeof(struct FileMapping));
-    if (mapping == NULL) {
-        MessageBox(hwnd, _T("MapViewOfFile failed"), _T("Error!"), NULL);
-        UnmapViewOfFile(dataPtr);
-        CloseHandle(hMapping);
-        CloseHandle(hFile);
-        return NULL;
-    }
-
-    mapping->hFile = hFile;
-    mapping->hMapping = hMapping;
-    mapping->dataPtr = dataPtr;
-    mapping->fsize = (size_t)dwFileSize;
-
-    return mapping;
-}
-
-void fileMappingClose(struct FileMapping* mapping) {
-    UnmapViewOfFile(mapping->dataPtr);
-    CloseHandle(mapping->hMapping);
-    CloseHandle(mapping->hFile);
-    free(mapping);
-}
-
 void display_file_left(PTCHAR path, HWND hwnd)
 {
-    TCHAR Buffer[CHUNK_SIZE];
-    memset(Buffer, 0, sizeof(Buffer));
+    TCHAR Buffer_1[CHUNK_SIZE];
+    memset(Buffer_1, 0, sizeof(Buffer_1));
+    TCHAR Buffer_2[LINES_PER_CHUNK * 16 + 1];
+    memset(Buffer_2, 0, sizeof(Buffer_2));
 
     if (path[0] == '\0')
         ;
     else {
-        mapping_left = fileMappingCreate(path, hwnd);
-        if (mapping_right != NULL && chunk_read_right > 0) {
-            MessageBox(hwnd, _T("You have to open second file for comparison!"), _T("Attention!"), NULL);
-            SetWindowText(hEdit_right, _T(""));
+        
+        HANDLE hFile_left = NULL;
+
+        hFile_left = CreateFile(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (hFile_left  == INVALID_HANDLE_VALUE)
+            MessageBox(hwnd, _T("Can't create file!"), _T("Error!"), NULL);
+
+        olf_left.Offset = li_left.LowPart;
+        olf_left.OffsetHigh = li_left.HighPart;
+
+        DWORD iNumRead = 0;
+
+        ReadFile(hFile_left, Buffer_2, LINES_PER_CHUNK * 16, &iNumRead, &olf_left);
+
+        FileSize_left = GetFileSize(hFile_left, NULL);
+        if (FileSize_left == INVALID_FILE_SIZE) {
+        MessageBox(hwnd, _T("GetFileSize failed"), _T("Error!"), NULL);
+        CloseHandle(hFile_left);
+        return NULL;
         }
-        buffer_write_left(Buffer, mapping_left->dataPtr, chunk_read_left, 1);
-        if (Buffer[1065] == 0) isEnd_left = TRUE;
-        SetWindowText(hEdit_left, Buffer);
-        fileMappingClose(mapping_left);
+
+//        olf_left.Offset += iNumRead;
+
+        buffer_write_left(Buffer_1, Buffer_2, &FileSize_left, chunk_read_left, 1);
+
+        if (Buffer_1[1065] == 0 && FileSize_left < LINES_PER_CHUNK * 16) isEnd_left = TRUE;
+
+        SetWindowText(hEdit_left, Buffer_1);
+        CloseHandle(hFile_left);
     }
 }
 
 void display_file_right(PTCHAR path, HWND hwnd)
 {
-    TCHAR Buffer[CHUNK_SIZE];
-    memset(Buffer, 0, sizeof(Buffer));
+    TCHAR Buffer_1[CHUNK_SIZE];
+    memset(Buffer_1, 0, sizeof(Buffer_1));
+    TCHAR Buffer_2[LINES_PER_CHUNK * 16 + 1];
+    memset(Buffer_2, 0, sizeof(Buffer_2));
+
+    HANDLE hFile_right = NULL;
 
     if (path[0] == '\0')
         ;
     else {
-        mapping_right = fileMappingCreate(path, hwnd);
-        if (mapping_left != NULL && chunk_read_left > 0) {
-            MessageBox(hwnd, _T("You have to open first file for comparison!"), _T("Attention!"), NULL);
-            SetWindowText(hEdit_left, _T(""));
+
+        hFile_right = CreateFile(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (hFile_right == INVALID_HANDLE_VALUE)
+            MessageBox(hwnd, _T("Can't create file!"), _T("Error!"), NULL);
+
+        olf_right.Offset = li_right.LowPart;
+        olf_right.OffsetHigh = li_right.HighPart;
+
+        DWORD iNumRead = 0;
+
+        ReadFile(hFile_right, Buffer_2, LINES_PER_CHUNK * 16, &iNumRead, &olf_right);
+
+        FileSize_right = GetFileSize(hFile_right, NULL);
+        if (FileSize_right == INVALID_FILE_SIZE) {
+            MessageBox(hwnd, _T("GetFileSize failed"), _T("Error!"), NULL);
+            CloseHandle(hFile_right);
+            return NULL;
         }
-        buffer_write_right(Buffer, mapping_right->dataPtr, chunk_read_right, 1);
-        if (Buffer[1065] == 0) isEnd_right = TRUE;
-        SetWindowText(hEdit_right, Buffer);
-        fileMappingClose(mapping_right);
+
+        buffer_write_right(Buffer_1, Buffer_2, FileSize_right, chunk_read_right, 1);
+
+        if (Buffer_1[1065] == 0 && FileSize_right < LINES_PER_CHUNK*16) isEnd_right = TRUE;
+
+        SetWindowText(hEdit_right, Buffer_1);
+        CloseHandle(hFile_right);
     }
 }
 
