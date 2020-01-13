@@ -207,10 +207,13 @@ void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2, char *first_time)
         if ((size = readline(Buffer_2, mark_src, &file_size)) == 0)
             break;
     }
-    if (FileSize_left < 240) {
-        isEnd_left = TRUE;
-        FileSize_restoration_left = 240 - FileSize_left;
+    if (FileSize_left < 464) isEnd_left = TRUE;
+
+    if (FileSize_left < 464) {
+        FileSize_restoration_left = 464 - FileSize_left;
     }
+    else
+        FileSize_left = file_size;
 }
 
 void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, char *first_time)
@@ -246,10 +249,10 @@ void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, 
             break;
     }
     
-    if (FileSize_right < 240) isEnd_right = TRUE;
+    if (FileSize_right < 464) isEnd_right = TRUE;
 
-    if (FileSize_right < 240) {
-        FileSize_restoration_right = 240 - FileSize_right;
+    if (FileSize_right < 464) {
+        FileSize_restoration_right = 464 - FileSize_right;
     }
     else
         FileSize_right = file_size;
@@ -316,7 +319,7 @@ void goto_next_chunk(HWND hwnd)
 
     chunk_read_left += 1;
     buffer_write_left(buffer_left_1, buffer_left_2, FileSize_left, chunk_read_left, 0);
-    if (FileSize_left < 240) isEnd_left = TRUE;
+    if (FileSize_left < 464) isEnd_left = TRUE;
     SetWindowText(hEdit_left, buffer_left_1);
     CloseHandle(hFile_left);
 
@@ -342,7 +345,7 @@ right:
 
     chunk_read_right += 1;
     buffer_write_right(buffer_right_1, buffer_right_2, FileSize_right, chunk_read_right, 0);
-    if (FileSize_right < 240) isEnd_right = TRUE;
+    if (FileSize_right < 464) isEnd_right = TRUE;
     SetWindowText(hEdit_right, buffer_right_1);
     CloseHandle(hFile_right);
 }
@@ -374,10 +377,10 @@ void goto_previous_chunk(HWND hwnd)
     else {
                 chunk_read_left -= 1;
                 
-                if (FileSize_left < LINES_PER_CHUNK * 16)
-                    FileSize_left += FileSize_restoration_left + LINES_PER_CHUNK * 16;
+                if (FileSize_left < 464)
+                    FileSize_left += FileSize_restoration_left + 464;
                 else
-                    FileSize_left += LINES_PER_CHUNK * 16;
+                    FileSize_left += 464;
 
                 addr_left -= (last_counter_left * LINE_LENGTH + LINES_PER_CHUNK* LINE_LENGTH);
                 isEnd_left = FALSE;
@@ -391,10 +394,10 @@ void goto_previous_chunk(HWND hwnd)
                 else
                     buffer_write_left(buffer_left_1, buffer_left_2, FileSize_left, chunk_read_left, 1);
 
-                if (FileSize_left < LINES_PER_CHUNK * 16)
-                    FileSize_left += FileSize_restoration_left + LINES_PER_CHUNK * 16;
+                if (FileSize_left < 464)
+                    FileSize_left += FileSize_restoration_left + 464;
                 else
-                    FileSize_left += LINES_PER_CHUNK * 16;
+                    FileSize_left += 464;
                 SetWindowText(hEdit_left, buffer_left_1);
                 CloseHandle(hFile_left);
     }
@@ -416,10 +419,10 @@ right:
     else {
         chunk_read_right -= 1;
 
-        if (FileSize_right < LINES_PER_CHUNK * 16)
-            FileSize_right += FileSize_restoration_right + LINES_PER_CHUNK * 16;
+        if (FileSize_right < 464)
+            FileSize_right += FileSize_restoration_right + 464;
         else
-            FileSize_right += LINES_PER_CHUNK * 16;
+            FileSize_right += 464;
 
         addr_right -= (last_counter_right * LINE_LENGTH + LINES_PER_CHUNK * LINE_LENGTH);
         isEnd_right = FALSE;
@@ -433,10 +436,10 @@ right:
         else
             buffer_write_right(buffer_right_1, buffer_right_2, FileSize_right, chunk_read_right, 1);
 
-        if (FileSize_right < LINES_PER_CHUNK * 16)
-            FileSize_right += FileSize_restoration_right + LINES_PER_CHUNK * 16;
+        if (FileSize_right < 464)
+            FileSize_right += FileSize_restoration_right + 464;
         else
-            FileSize_right += LINES_PER_CHUNK * 16;
+            FileSize_right += 464;
         SetWindowText(hEdit_right, buffer_right_1);
         CloseHandle(hFile_right);
     }

@@ -11,7 +11,7 @@
 #define FALSE 0
 #define TRUE 1
 
-#define BUF_SIZE 1024
+#define BUF_SIZE 2400
 
 #define FILE_MENU_OPEN 1
 #define FILE_MENU_COMPARE 2
@@ -21,11 +21,11 @@
 #define NEXT 6
 #define BACK 7
 
-#define LINES_PER_CHUNK 14
+#define LINES_PER_CHUNK 28
 #define LINE_LENGTH 16
 
-#define CHUNK_SIZE 1200
-#define SRC_SIZE 1024
+#define CHUNK_SIZE 2400
+#define SRC_SIZE 2400
 
 #define RED_COLOR 0x000000FF
 

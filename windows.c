@@ -123,7 +123,7 @@ void display_file_left(PTCHAR path, HWND hwnd)
 
         buffer_write_left(Buffer_1, Buffer_2, &FileSize_left, chunk_read_left, 1);
 
-        if (Buffer_1[1065] == 0 && FileSize_left < LINES_PER_CHUNK * 16) isEnd_left = TRUE;
+        if (Buffer_1[2130] == 0 && FileSize_left < LINES_PER_CHUNK * 16) isEnd_left = TRUE;
 
         SetWindowText(hEdit_left, Buffer_1);
         CloseHandle(hFile_left);
@@ -163,7 +163,7 @@ void display_file_right(PTCHAR path, HWND hwnd)
 
         buffer_write_right(Buffer_1, Buffer_2, FileSize_right, chunk_read_right, 1);
 
-        if (Buffer_1[1065] == 0 && FileSize_right < LINES_PER_CHUNK*16) isEnd_right = TRUE;
+        if (Buffer_1[2130] == 0 && FileSize_right < LINES_PER_CHUNK*16) isEnd_right = TRUE;
 
         SetWindowText(hEdit_right, Buffer_1);
         CloseHandle(hFile_right);
