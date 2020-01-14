@@ -6,12 +6,15 @@
 #include <richedit.h>
 #include "transform.h"
 
-long long addr_left = 0;
-long long addr_right = 0;
+long long addr_low_left = 0;
+long long addr_low_right = 0;
+long long addr_high_left = 0;
+long long addr_high_right = 0;
 
-char FileSize_restoration_left = 0;
-char FileSize_restoration_right = 0;
+long long FileSize_restoration_left = 0;
+long long FileSize_restoration_right = 0;
 
+char IsInGotoPrevChunk = FALSE;
 char last_counter_left = 0;
 char last_counter_right = 0;
 
@@ -118,13 +121,20 @@ void putbyt_addr(int c, PTCHAR Buffer_1, long long* mark_dst)
     }
 }
 
-void putlong(PTCHAR Buffer_1, long long addr, long long* mark_dst, char *first_time)
+void putlong_high(PTCHAR Buffer_1, long long addr, long long* mark_dst)
 {
-    if (addr >= 16 && *first_time) {
-        //*mark_dst += 1;
-        //*first_time = FALSE;
-    }
-    else
+    *mark_dst += 0;
+    putbyt_addr(((addr >> 24) & 0x000000ff), Buffer_1, mark_dst); // 3rd byte
+    *mark_dst += 1;
+    putbyt_addr(((addr >> 16) & 0x000000ff), Buffer_1, mark_dst); // 2nd byte
+    *mark_dst += 1;
+    putbyt_addr(((addr >> 8) & 0x000000ff), Buffer_1, mark_dst); // 1st byte
+    *mark_dst += 1;
+    putbyt_addr(((addr >> 0) & 0x000000ff), Buffer_1, mark_dst); // 0th byte
+}
+
+void putlong_low(PTCHAR Buffer_1, long long addr, long long* mark_dst)
+{
         *mark_dst += 0;
     putbyt_addr(((addr >> 24) & 0x000000ff), Buffer_1, mark_dst); // 3rd byte
     *mark_dst += 1;
@@ -173,7 +183,7 @@ void printline(long long size, long long* mark_dst, long long* mark_src, PTCHAR 
     buf1[++(*mark_dst)] = '\n';
 }
 
-void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2, char *first_time)
+void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2)
 {
     long long size = 0;
     char counter = 0;
@@ -188,10 +198,10 @@ void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2, char *first_time)
     if (size == 0) {
         last_counter_left = 0;
     }
-    
-    while (counter < LINES_PER_CHUNK && size != 0) {
 
-        putlong(Buffer_1, addr_left, &mark_dst, &first_time);
+    while (counter < LINES_PER_CHUNK && size != 0) {
+        putlong_high(Buffer_1, addr_high_left, &mark_dst);
+        putlong_low(Buffer_1, addr_low_left, &mark_dst);
 
         /* add :  after every address passed*/
         mark_dst += 1;
@@ -199,7 +209,12 @@ void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2, char *first_time)
         Buffer_1[++mark_dst] = ' ';
         printline(size, &mark_dst, &mark_src, Buffer_1, Buffer_2);
 
-        addr_left += 16;
+        if (addr_low_left < 0xFFFFFFFF - 16)
+            addr_low_left += 16;
+        else {
+            addr_high_left += 1;
+            addr_low_left = 16 - (0xFFFFFFFF - addr_low_left);
+        }
         counter++;
 
         last_counter_left = counter;
@@ -207,16 +222,20 @@ void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2, char *first_time)
         if ((size = readline(Buffer_2, mark_src, &file_size)) == 0)
             break;
     }
-    if (FileSize_left < 464) isEnd_left = TRUE;
-
-    if (FileSize_left < 464) {
-        FileSize_restoration_left = 464 - FileSize_left;
-    }
-    else
+    if (FileSize_left < 464 && file_size == 0 && !isEnd_left && !IsInGotoPrevChunk) {
+        FileSize_restoration_left = FileSize_left;
         FileSize_left = file_size;
+    }
+    else {
+        if (IsInGotoPrevChunk)
+            ;
+        else
+            FileSize_left = file_size;
+    }
+        if (file_size == 0 && !IsInGotoPrevChunk) isEnd_left = TRUE;
 }
 
-void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, char *first_time)
+void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2)
 {
     long long size = 0;
     char counter = 0;
@@ -231,10 +250,10 @@ void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, 
     if (size == 0) {
         last_counter_right = 0;
     }
-    
-    while (counter < LINES_PER_CHUNK && size != 0) {
 
-        putlong(Buffer_1, addr_right, &mark_dst, &first_time);
+    while (counter < LINES_PER_CHUNK && size != 0) {
+        putlong_high(Buffer_1, addr_high_right, &mark_dst);
+        putlong_low(Buffer_1, addr_low_right, &mark_dst);
 
         /* add :  after every address passed*/
         mark_dst += 1;
@@ -242,24 +261,38 @@ void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2, long long chunk_read, 
         Buffer_1[++mark_dst] = ' ';
         printline(size, &mark_dst, &mark_src, Buffer_1, Buffer_2);
 
-        addr_right += 16;
+        if (addr_low_right < 0xFFFFFFFF - 16)
+            addr_low_right += 16;
+        else {
+            addr_high_right += 1;
+            addr_low_right = 16 - (0xFFFFFFFF - addr_low_right);
+        }
         counter++;
+
         last_counter_right = counter;
+
         if ((size = readline(Buffer_2, mark_src, &file_size)) == 0)
             break;
     }
-    
-    if (FileSize_right < 464) isEnd_right = TRUE;
-
-    if (FileSize_right < 464) {
-        FileSize_restoration_right = 464 - FileSize_right;
-    }
-    else
+    if (FileSize_right < 464 && file_size == 0 && !isEnd_right && !IsInGotoPrevChunk) {
+        FileSize_restoration_right = FileSize_right;
         FileSize_right = file_size;
+    }
+    else {
+        if (IsInGotoPrevChunk)
+            ;
+        else
+            FileSize_right = file_size;
+    }
+    if (file_size == 0 && !IsInGotoPrevChunk) isEnd_right = TRUE;
 }
 
-void compare() 
+void compare(HWND hwnd) 
 {
+    if (saved_filename_left[0] == 0 || saved_filename_right[0] == 0) {
+        MessageBox(hwnd, _T("You should open two files!"), _T("Error!"), NULL);
+        return;
+    }
     TCHAR Buffer_1[CHUNK_SIZE];
     TCHAR Buffer_2[CHUNK_SIZE];
 
@@ -289,6 +322,19 @@ void compare()
 
 void goto_next_chunk(HWND hwnd)
 {
+    IsInGotoPrevChunk = FALSE;
+    if (saved_filename_left[0] == 0 || saved_filename_right[0] == 0) {
+        MessageBox(hwnd, _T("You should open two files!"), _T("Error!"), NULL);
+        return;
+    }
+    if (chunk_read_left != 0 && chunk_read_right == 0) {
+        MessageBox(hwnd, _T("You should reopen the first file for equality of addresses!"), _T("Error!"), NULL);
+        return;
+    }
+    else if (chunk_read_left == 0 && chunk_read_right != 0) {
+        MessageBox(hwnd, _T("You should reopen the second file for equality of addresses!"), _T("Error!"), NULL);
+        return;
+    }
     TCHAR buffer_left_1[CHUNK_SIZE];
     memset(buffer_left_1, 0, sizeof(buffer_left_1));
     TCHAR buffer_left_2[LINES_PER_CHUNK * 16 + 1];
@@ -318,8 +364,7 @@ void goto_next_chunk(HWND hwnd)
     ReadFile(hFile_left, buffer_left_2, LINES_PER_CHUNK * 16, &iNumRead_left, &olf_left);
 
     chunk_read_left += 1;
-    buffer_write_left(buffer_left_1, buffer_left_2, FileSize_left, chunk_read_left, 0);
-    if (FileSize_left < 464) isEnd_left = TRUE;
+    buffer_write_left(buffer_left_1, buffer_left_2);
     SetWindowText(hEdit_left, buffer_left_1);
     CloseHandle(hFile_left);
 
@@ -327,8 +372,7 @@ right:
 
     if (isEnd_right) return;
 
-    if (olf_right.Offset < sizeof(DWORD))
-        ;
+
 
     HANDLE hFile_right = NULL;
     if (saved_filename_right[0] == 0) return;
@@ -339,19 +383,36 @@ right:
 
     DWORD iNumRead_right = 0;
 
-    olf_right.Offset += LINES_PER_CHUNK * 16;
+    if (olf_right.Offset < (0xFFFFFFFF - LINES_PER_CHUNK * 16))
+        olf_right.Offset += LINES_PER_CHUNK * 16;
+    else {
+        olf_right.OffsetHigh += 1;
+        olf_right.Offset = LINES_PER_CHUNK*16 - (0xFFFFFFFF - olf_right.Offset);
+    }
 
     ReadFile(hFile_right, buffer_right_2, LINES_PER_CHUNK * 16, &iNumRead_right, &olf_right);
 
     chunk_read_right += 1;
-    buffer_write_right(buffer_right_1, buffer_right_2, FileSize_right, chunk_read_right, 0);
-    if (FileSize_right < 464) isEnd_right = TRUE;
+    buffer_write_right(buffer_right_1, buffer_right_2);
     SetWindowText(hEdit_right, buffer_right_1);
     CloseHandle(hFile_right);
 }
 
 void goto_previous_chunk(HWND hwnd)
 {
+    IsInGotoPrevChunk = TRUE;
+    if (saved_filename_left[0] == 0 || saved_filename_right[0] == 0) {
+        MessageBox(hwnd, _T("You should open two files!"), _T("Error!"), NULL);
+        return;
+    }
+    if (chunk_read_left != 0 && chunk_read_right == 0) {
+        MessageBox(hwnd, _T("You should reopen the first file for equality of addresses!"), _T("Error!"), NULL);
+        return;
+    }
+    else if (chunk_read_left == 0 && chunk_read_right != 0) {
+        MessageBox(hwnd, _T("You should reopen the second file for equality of addresses!"), _T("Error!"), NULL);
+        return;
+    }
     TCHAR buffer_left_1[CHUNK_SIZE];
     memset(buffer_left_1, 0, sizeof(buffer_left_1));
     TCHAR buffer_left_2[LINES_PER_CHUNK * 16 + 1];
@@ -376,28 +437,22 @@ void goto_previous_chunk(HWND hwnd)
     }
     else {
                 chunk_read_left -= 1;
-                
-                if (FileSize_left < 464)
-                    FileSize_left += FileSize_restoration_left + 464;
+                if (isEnd_left)
+                    FileSize_left += FileSize_restoration_left;
                 else
                     FileSize_left += 464;
 
-                addr_left -= (last_counter_left * LINE_LENGTH + LINES_PER_CHUNK* LINE_LENGTH);
+                addr_low_left -= (last_counter_left * LINE_LENGTH + LINES_PER_CHUNK* LINE_LENGTH);
                 isEnd_left = FALSE;
 
                 DWORD iNumRead_left = 0;
 
                 ReadFile(hFile_left, buffer_left_2, LINES_PER_CHUNK * 16, &iNumRead_left, &olf_left);
                 
-                if (addr_left != 0)
-                    buffer_write_left(buffer_left_1, buffer_left_2, FileSize_left, chunk_read_left, 0);
+                if (addr_low_left != 0)
+                    buffer_write_left(buffer_left_1, buffer_left_2);
                 else
-                    buffer_write_left(buffer_left_1, buffer_left_2, FileSize_left, chunk_read_left, 1);
-
-                if (FileSize_left < 464)
-                    FileSize_left += FileSize_restoration_left + 464;
-                else
-                    FileSize_left += 464;
+                    buffer_write_left(buffer_left_1, buffer_left_2);
                 SetWindowText(hEdit_left, buffer_left_1);
                 CloseHandle(hFile_left);
     }
@@ -424,17 +479,17 @@ right:
         else
             FileSize_right += 464;
 
-        addr_right -= (last_counter_right * LINE_LENGTH + LINES_PER_CHUNK * LINE_LENGTH);
+        addr_low_right -= (last_counter_right * LINE_LENGTH + LINES_PER_CHUNK * LINE_LENGTH);
         isEnd_right = FALSE;
 
         DWORD iNumRead_right = 0;
 
         ReadFile(hFile_right, buffer_right_2, LINES_PER_CHUNK * 16, &iNumRead_right, &olf_right);
         
-        if (addr_right != 0)
-            buffer_write_right(buffer_right_1, buffer_right_2, FileSize_right, chunk_read_right, 0);
+        if (addr_low_right != 0)
+            buffer_write_right(buffer_right_1, buffer_right_2);
         else
-            buffer_write_right(buffer_right_1, buffer_right_2, FileSize_right, chunk_read_right, 1);
+            buffer_write_right(buffer_right_1, buffer_right_2);
 
         if (FileSize_right < 464)
             FileSize_right += FileSize_restoration_right + 464;

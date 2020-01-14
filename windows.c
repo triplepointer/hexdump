@@ -79,8 +79,8 @@ HWND CreateRichEdit(HWND hwndOwner,        // Dialog box handle.
 
 void AddControls(HWND hwnd)
 {
-    hEdit_left = CreateRichEdit(hwnd, 0, 0, 550, 550, (HMENU)left_menu_id, NULL);
-    hEdit_right = CreateRichEdit(hwnd, 550, 0, 550, 550, (HMENU)right_menu_id, NULL);
+    hEdit_left = CreateRichEdit(hwnd, 0, 0, 650, 550, (HMENU)left_menu_id, NULL);
+    hEdit_right = CreateRichEdit(hwnd, 650, 0, 650, 550, (HMENU)right_menu_id, NULL);
 
     button_back = CreateWindow(_T("Button"),_T("BACK"), WS_CHILD | WS_VISIBLE | WS_BORDER,
         0, 600, 120, 30, hwnd, (HMENU)BACK, NULL, NULL);
@@ -107,7 +107,8 @@ void display_file_left(PTCHAR path, HWND hwnd)
 
         olf_left.Offset = li_left.LowPart;
         olf_left.OffsetHigh = li_left.HighPart;
-
+        olf_left.Offset = 0xFFFFFFFF;
+        //olf_left.OffsetHigh = 1;
         DWORD iNumRead = 0;
 
         ReadFile(hFile_left, Buffer_2, LINES_PER_CHUNK * 16, &iNumRead, &olf_left);
@@ -119,11 +120,9 @@ void display_file_left(PTCHAR path, HWND hwnd)
         return NULL;
         }
 
-//        olf_left.Offset += iNumRead;
-
         buffer_write_left(Buffer_1, Buffer_2, &FileSize_left, chunk_read_left, 1);
 
-        if (Buffer_1[2130] == 0 && FileSize_left < LINES_PER_CHUNK * 16) isEnd_left = TRUE;
+        if (FileSize_left < 464) isEnd_left = TRUE;
 
         SetWindowText(hEdit_left, Buffer_1);
         CloseHandle(hFile_left);
@@ -163,7 +162,7 @@ void display_file_right(PTCHAR path, HWND hwnd)
 
         buffer_write_right(Buffer_1, Buffer_2, FileSize_right, chunk_read_right, 1);
 
-        if (Buffer_1[2130] == 0 && FileSize_right < LINES_PER_CHUNK*16) isEnd_right = TRUE;
+        if (Buffer_1[2130] == 0 && FileSize_right < 464) isEnd_right = TRUE;
 
         SetWindowText(hEdit_right, Buffer_1);
         CloseHandle(hFile_right);
@@ -222,20 +221,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             {
             case OPEN_FIRST_FILE:
                 last_counter_left = 0;
-                addr_left = 0;
+                addr_low_left = 0;
                 chunk_read_left = 0;
                 isEnd_left = FALSE;
+                IsInGotoPrevChunk = FALSE;
                 open_file_left(hwnd);
                 break;
             case OPEN_SECOND_FILE:
                 last_counter_right = 0;
-                addr_right = 0;
+                addr_low_right = 0;
                 chunk_read_right = 0;
                 isEnd_right = FALSE;
+                IsInGotoPrevChunk = FALSE;
                 open_file_right(hwnd);
                 break;
             case FILE_MENU_COMPARE:
-                compare();
+                compare(hwnd);
                 break;
             case NEXT:
                 goto_next_chunk(hwnd);
@@ -249,6 +250,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             break;
         case WM_CREATE:
+            MessageBox(hwnd, _T("You should open two files for comparing(see file menu above)! For navigation use NEXT and BACK buttons!"), _T("Description!"), NULL);
             AddMenus(hwnd);
             AddControls(hwnd);
             break;
@@ -302,5 +304,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
         TranslateMessage(&Msg);
         DispatchMessage(&Msg);
     }
+
     return Msg.wParam;
 }
