@@ -107,8 +107,8 @@ void display_file_left(PTCHAR path, HWND hwnd)
 
         olf_left.Offset = li_left.LowPart;
         olf_left.OffsetHigh = li_left.HighPart;
-        olf_left.Offset = 0xFFFFFFFF;
-        //olf_left.OffsetHigh = 1;
+//        olf_left.Offset = 0xFFFFFE3F;
+//        olf_left.OffsetHigh = 0;
         DWORD iNumRead = 0;
 
         ReadFile(hFile_left, Buffer_2, LINES_PER_CHUNK * 16, &iNumRead, &olf_left);

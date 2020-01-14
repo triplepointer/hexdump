@@ -327,14 +327,6 @@ void goto_next_chunk(HWND hwnd)
         MessageBox(hwnd, _T("You should open two files!"), _T("Error!"), NULL);
         return;
     }
-    if (chunk_read_left != 0 && chunk_read_right == 0) {
-        MessageBox(hwnd, _T("You should reopen the first file for equality of addresses!"), _T("Error!"), NULL);
-        return;
-    }
-    else if (chunk_read_left == 0 && chunk_read_right != 0) {
-        MessageBox(hwnd, _T("You should reopen the second file for equality of addresses!"), _T("Error!"), NULL);
-        return;
-    }
     TCHAR buffer_left_1[CHUNK_SIZE];
     memset(buffer_left_1, 0, sizeof(buffer_left_1));
     TCHAR buffer_left_2[LINES_PER_CHUNK * 16 + 1];
@@ -359,7 +351,12 @@ void goto_next_chunk(HWND hwnd)
 
     DWORD iNumRead_left = 0;
 
-    olf_left.Offset += LINES_PER_CHUNK * 16;
+    if (olf_left.Offset < (0xFFFFFFFF - LINES_PER_CHUNK * 16))
+        olf_left.Offset += LINES_PER_CHUNK * 16;
+    else {
+        olf_left.OffsetHigh += 1;
+        olf_left.Offset = LINES_PER_CHUNK * 16 - (0xFFFFFFFF - olf_left.Offset);
+    }
 
     ReadFile(hFile_left, buffer_left_2, LINES_PER_CHUNK * 16, &iNumRead_left, &olf_left);
 
@@ -405,14 +402,6 @@ void goto_previous_chunk(HWND hwnd)
         MessageBox(hwnd, _T("You should open two files!"), _T("Error!"), NULL);
         return;
     }
-    if (chunk_read_left != 0 && chunk_read_right == 0) {
-        MessageBox(hwnd, _T("You should reopen the first file for equality of addresses!"), _T("Error!"), NULL);
-        return;
-    }
-    else if (chunk_read_left == 0 && chunk_read_right != 0) {
-        MessageBox(hwnd, _T("You should reopen the second file for equality of addresses!"), _T("Error!"), NULL);
-        return;
-    }
     TCHAR buffer_left_1[CHUNK_SIZE];
     memset(buffer_left_1, 0, sizeof(buffer_left_1));
     TCHAR buffer_left_2[LINES_PER_CHUNK * 16 + 1];
@@ -425,7 +414,32 @@ void goto_previous_chunk(HWND hwnd)
 
     if (chunk_read_left == 0 || (chunk_read_left < chunk_read_right)) goto right;
 
-    olf_left.Offset -= LINES_PER_CHUNK * 16;
+
+    //if (olf_right.Offset < (0xFFFFFFFF - LINES_PER_CHUNK * 16))
+    //    olf_right.Offset += LINES_PER_CHUNK * 16;
+    //else {
+    //    olf_right.OffsetHigh += 1;
+    //    olf_right.Offset = LINES_PER_CHUNK * 16 - (0xFFFFFFFF - olf_right.Offset);
+    //}
+
+    if (olf_left.OffsetHigh > 0 && olf_left.Offset > 0) {
+        if (olf_left.Offset >= LINES_PER_CHUNK * 16) {
+            olf_left.OffsetHigh -= 1;
+            olf_left.Offset -= LINES_PER_CHUNK * 16;
+        }
+        else if (olf_left.Offset < LINES_PER_CHUNK * 16) {
+            olf_left.OffsetHigh -= 1;
+            olf_left.Offset = 1 + (0xFFFFFFFF - LINES_PER_CHUNK * 16) + olf_left.Offset;
+        }
+    }
+    else if (olf_left.OffsetHigh > 0 && olf_left.Offset == 0) {
+        olf_left.OffsetHigh -= 1;
+        olf_left.Offset = 1 + (0xFFFFFFFF - LINES_PER_CHUNK * 16);
+    }
+    else
+    {
+        olf_left.Offset -= LINES_PER_CHUNK * 16;
+    }
 
     HANDLE hFile_left = NULL;
     if (saved_filename_left[0] == 0) return;
@@ -461,7 +475,24 @@ right:
 
     if (chunk_read_right == 0 || (chunk_read_right <= chunk_read_left)) return;
 
-    olf_right.Offset -= LINES_PER_CHUNK * 16;
+    if (olf_right.OffsetHigh > 0 && olf_right.Offset > 0) {
+        if (olf_right.Offset >= LINES_PER_CHUNK * 16) {
+            olf_right.OffsetHigh -= 1;
+            olf_right.Offset -= LINES_PER_CHUNK * 16;
+        }
+        else if (olf_right.Offset < LINES_PER_CHUNK * 16) {
+            olf_right.OffsetHigh -= 1;
+            olf_right.Offset = 1 + (0xFFFFFFFF - LINES_PER_CHUNK * 16) + olf_right.Offset;
+        }
+    }
+    else if (olf_right.OffsetHigh > 0 && olf_right.Offset == 0) {
+        olf_right.OffsetHigh -= 1;
+        olf_right.Offset = 1 + (0xFFFFFFFF - LINES_PER_CHUNK * 16);
+    }
+    else
+    {
+        olf_right.Offset -= LINES_PER_CHUNK * 16;
+    }
 
     HANDLE hFile_right = NULL;
     if (saved_filename_right[0] == 0) return;
