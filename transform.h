@@ -67,8 +67,8 @@ extern long long addr_low_right;
 extern long long addr_high_left;
 extern long long addr_high_right;
 
-extern DWORD FileSize_left;
-extern DWORD FileSize_right;
+extern LARGE_INTEGER FileSize_left;
+extern LARGE_INTEGER FileSize_right;
 
 extern int left_menu_id;
 extern int right_menu_id;

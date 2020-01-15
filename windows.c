@@ -26,8 +26,8 @@ HWND hCompare;
 HWND button_next;
 HWND button_back;
 
-DWORD FileSize_left = 0;
-DWORD FileSize_right = 0;
+LARGE_INTEGER FileSize_left = { 0 };
+LARGE_INTEGER FileSize_right = { 0 };
 
 int left_menu_id;
 int right_menu_id;
@@ -113,16 +113,16 @@ void display_file_left(PTCHAR path, HWND hwnd)
 
         ReadFile(hFile_left, Buffer_2, LINES_PER_CHUNK * 16, &iNumRead, &olf_left);
 
-        FileSize_left = GetFileSize(hFile_left, NULL);
-        if (FileSize_left == INVALID_FILE_SIZE) {
+        GetFileSizeEx(hFile_left, &FileSize_left);
+        if (FileSize_left.QuadPart == INVALID_FILE_SIZE) {
         MessageBox(hwnd, _T("GetFileSize failed"), _T("Error!"), NULL);
         CloseHandle(hFile_left);
         return NULL;
         }
 
-        buffer_write_left(Buffer_1, Buffer_2, &FileSize_left, chunk_read_left, 1);
+        buffer_write_left(Buffer_1, Buffer_2);
 
-        if (FileSize_left < 464) isEnd_left = TRUE;
+        if (FileSize_left.QuadPart < 464) isEnd_left = TRUE;
 
         SetWindowText(hEdit_left, Buffer_1);
         CloseHandle(hFile_left);
@@ -152,17 +152,17 @@ void display_file_right(PTCHAR path, HWND hwnd)
         DWORD iNumRead = 0;
 
         ReadFile(hFile_right, Buffer_2, LINES_PER_CHUNK * 16, &iNumRead, &olf_right);
-
-        FileSize_right = GetFileSize(hFile_right, NULL);
-        if (FileSize_right == INVALID_FILE_SIZE) {
+        
+        GetFileSizeEx(hFile_right, &FileSize_right);
+        if (FileSize_right.QuadPart == INVALID_FILE_SIZE) {
             MessageBox(hwnd, _T("GetFileSize failed"), _T("Error!"), NULL);
             CloseHandle(hFile_right);
             return NULL;
         }
 
-        buffer_write_right(Buffer_1, Buffer_2, FileSize_right, chunk_read_right, 1);
+        buffer_write_right(Buffer_1, Buffer_2);
 
-        if (Buffer_1[2130] == 0 && FileSize_right < 464) isEnd_right = TRUE;
+        if (FileSize_right.QuadPart < 464) isEnd_right = TRUE;
 
         SetWindowText(hEdit_right, Buffer_1);
         CloseHandle(hFile_right);
@@ -250,7 +250,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             }
             break;
         case WM_CREATE:
-            MessageBox(hwnd, _T("You should open two files for comparing(see file menu above)! For navigation use NEXT and BACK buttons!"), _T("Description!"), NULL);
+            MessageBox(hwnd, _T("You should open two files for comparison(see file menu above)! For navigation use NEXT and BACK buttons!"), _T("Description!"), NULL);
             AddMenus(hwnd);
             AddControls(hwnd);
             break;

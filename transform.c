@@ -50,14 +50,14 @@ void Highlight_hEdit_right(UINT uStartPos, UINT uEndPos, COLORREF color) {
     SendMessage(hEdit_right, EM_EXSETSEL, 0, (LPARAM)&save); // go back to saved position
 }
 
-int readline(PTCHAR buf, long long mark_src, DWORD *file_size) {
+int readline(PTCHAR buf, long long mark_src, LARGE_INTEGER *file_size) {
     int size = 0;
 
-    if ((*file_size) == 0) return size;
+    if ((file_size->QuadPart) == 0) return size;
 
-    while (((*file_size)--) != 0) {
+    while (((file_size->QuadPart)--) != 0) {
         size = size + 1;
-        if ((*file_size) == 0) break;
+        if ((file_size->QuadPart) == 0) break;
         if (size == 16) break;
     }
     return size;
@@ -191,7 +191,7 @@ void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2)
     long long mark_dst = 0;
     long long mark_src = 0;
 
-    DWORD file_size = FileSize_left;
+    LARGE_INTEGER file_size = FileSize_left;
 
     size = readline(Buffer_2, mark_src, &file_size);
 
@@ -222,17 +222,17 @@ void buffer_write_left(PTCHAR Buffer_1, PTCHAR Buffer_2)
         if ((size = readline(Buffer_2, mark_src, &file_size)) == 0)
             break;
     }
-    if (FileSize_left < 464 && file_size == 0 && !isEnd_left && !IsInGotoPrevChunk) {
-        FileSize_restoration_left = FileSize_left;
-        FileSize_left = file_size;
+    if (FileSize_left.QuadPart < 464 && file_size.QuadPart == 0 && !isEnd_left && !IsInGotoPrevChunk) {
+        FileSize_restoration_left = FileSize_left.LowPart;
+        FileSize_left.LowPart = file_size.LowPart;
     }
     else {
         if (IsInGotoPrevChunk)
             ;
         else
-            FileSize_left = file_size;
+            FileSize_left.QuadPart = file_size.QuadPart;
     }
-        if (file_size == 0 && !IsInGotoPrevChunk) isEnd_left = TRUE;
+    if (file_size.QuadPart == 0 && !IsInGotoPrevChunk) isEnd_left = TRUE;
 }
 
 void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2)
@@ -243,7 +243,7 @@ void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2)
     long long mark_dst = 0;
     long long mark_src = 0;
 
-    DWORD file_size = FileSize_right;
+    LARGE_INTEGER file_size = FileSize_right;
 
     size = readline(Buffer_2, mark_src, &file_size);
 
@@ -274,17 +274,17 @@ void buffer_write_right(PTCHAR Buffer_1, PTCHAR Buffer_2)
         if ((size = readline(Buffer_2, mark_src, &file_size)) == 0)
             break;
     }
-    if (FileSize_right < 464 && file_size == 0 && !isEnd_right && !IsInGotoPrevChunk) {
-        FileSize_restoration_right = FileSize_right;
-        FileSize_right = file_size;
+    if (FileSize_right.QuadPart < 464 && file_size.QuadPart == 0 && !isEnd_right && !IsInGotoPrevChunk) {
+        FileSize_restoration_right = FileSize_right.LowPart;
+        FileSize_right.LowPart = file_size.LowPart;
     }
     else {
         if (IsInGotoPrevChunk)
             ;
         else
-            FileSize_right = file_size;
+            FileSize_right.QuadPart = file_size.QuadPart;
     }
-    if (file_size == 0 && !IsInGotoPrevChunk) isEnd_right = TRUE;
+    if (file_size.QuadPart == 0 && !IsInGotoPrevChunk) isEnd_right = TRUE;
 }
 
 void compare(HWND hwnd) 
@@ -369,8 +369,6 @@ right:
 
     if (isEnd_right) return;
 
-
-
     HANDLE hFile_right = NULL;
     if (saved_filename_right[0] == 0) return;
     hFile_right = CreateFile(saved_filename_right, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -414,14 +412,6 @@ void goto_previous_chunk(HWND hwnd)
 
     if (chunk_read_left == 0 || (chunk_read_left < chunk_read_right)) goto right;
 
-
-    //if (olf_right.Offset < (0xFFFFFFFF - LINES_PER_CHUNK * 16))
-    //    olf_right.Offset += LINES_PER_CHUNK * 16;
-    //else {
-    //    olf_right.OffsetHigh += 1;
-    //    olf_right.Offset = LINES_PER_CHUNK * 16 - (0xFFFFFFFF - olf_right.Offset);
-    //}
-
     if (olf_left.OffsetHigh > 0 && olf_left.Offset > 0) {
         if (olf_left.Offset >= LINES_PER_CHUNK * 16) {
             olf_left.OffsetHigh -= 1;
@@ -452,9 +442,9 @@ void goto_previous_chunk(HWND hwnd)
     else {
                 chunk_read_left -= 1;
                 if (isEnd_left)
-                    FileSize_left += FileSize_restoration_left;
+                    FileSize_left.LowPart += FileSize_restoration_left;
                 else
-                    FileSize_left += 464;
+                    FileSize_left.LowPart += 464;
 
                 addr_low_left -= (last_counter_left * LINE_LENGTH + LINES_PER_CHUNK* LINE_LENGTH);
                 isEnd_left = FALSE;
@@ -505,10 +495,10 @@ right:
     else {
         chunk_read_right -= 1;
 
-        if (FileSize_right < 464)
-            FileSize_right += FileSize_restoration_right + 464;
+        if (FileSize_right.LowPart < 464)
+            FileSize_right.LowPart += FileSize_restoration_right + 464;
         else
-            FileSize_right += 464;
+            FileSize_right.LowPart += 464;
 
         addr_low_right -= (last_counter_right * LINE_LENGTH + LINES_PER_CHUNK * LINE_LENGTH);
         isEnd_right = FALSE;
@@ -522,10 +512,10 @@ right:
         else
             buffer_write_right(buffer_right_1, buffer_right_2);
 
-        if (FileSize_right < 464)
-            FileSize_right += FileSize_restoration_right + 464;
+        if (FileSize_right.LowPart < 464)
+            FileSize_right.LowPart += FileSize_restoration_right + 464;
         else
-            FileSize_right += 464;
+            FileSize_right.LowPart += 464;
         SetWindowText(hEdit_right, buffer_right_1);
         CloseHandle(hFile_right);
     }
